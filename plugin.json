@@ -1,0 +1,26 @@
+{
+  "id": "art",
+  "name": "Art of Imaging",
+  "version": "0.1.0",
+  "engines": {
+    "graphy": ">=0.3.0",
+    "os": [
+      "win32",
+      "darwin",
+      "linux"
+    ]
+  },
+  "description": "Turn a displayed DICOM image into an artwork in the style of a public-domain painter, with an appreciation note. Research, education and artistic expression only - not a diagnostic device.",
+  "author": "Visionary Imaging Services, Inc.",
+  "homepage": "https://github.com/tatsunidas/graphy-next-plugin-art",
+  "license": "MIT",
+  "contributes": [
+    "viewer2d.menu.analysis"
+  ],
+  "ui": "ui.js",
+  "permissions": [
+    "read-pixels",
+    "ai-egress",
+    "file-save"
+  ]
+}
