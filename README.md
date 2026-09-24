@@ -22,6 +22,40 @@ GRAPHY-Next の **Art of Imaging** プラグイン。表示中の DICOM 画像�
 - GRAPHY-Next **0.3.0 以降**（`host.ai` / `host.file` ホスト API が要る。**未リリース**）
 - Gemini の API キー。本体の **環境設定 ＞ 外部 AI** で設定します。キーは OS のキーチェーンに預けられ、このプラグインからは読めません。
 
+## 導入方法
+
+> ⚠️ **いまは導入できません。** GRAPHY-Next 0.3.0 が未リリースのためです
+> （`plugin.json` の `engines.graphy` が `>=0.3.0` で、本体が満たさない版では
+> **導入時に弾かれます**）。以下は 0.3.0 公開後の手順です。
+
+### 利用者（プラグインマネージャから）
+
+1. GRAPHY-Next を起動し、**プラグイン ＞ プラグインマネージャ** を開く
+2. このリポジトリの URL（`https://github.com/tatsunidas/graphy-next-plugin-art`）を入れる
+3. 確認画面で、**同梱物・要求する権限・対応 OS・ハッシュ**を確認して同意する
+4. 本体を開き直す（プラグインは起動時に読まれます）
+5. **環境設定 ＞ 外部 AI** で Gemini の API キーを設定する
+6. 2D ビューアで画像を開き、**解析 ＞ Art of Imaging**
+
+要求する権限は 3 つです。確認画面にそのまま出ます。
+
+| 権限 | 何に使うか |
+|---|---|
+| `read-pixels` | 表示中スライスの画素を読む |
+| `ai-egress` | **画像を Google のクラウドへ送る**（送信ごとに本体が同意を求めます） |
+| `file-save` | 作品を名前を付けて保存する |
+
+### 開発者（ソースから）
+
+```bash
+git clone https://github.com/tatsunidas/graphy-next-plugin-art
+cd graphy-next-plugin-art && npm install && npm run verify   # 型・テスト・ビルド
+cp plugin.json ui.js <GRAPHY-Next>/desktop/plugins/art/      # 直接置く
+```
+
+`desktop/plugins/` 直下に置く経路はプラグインマネージャの検査（版数・OS・ハッシュ・署名）を
+**通りません**。開発中だけに使ってください。
+
 ## 個人情報について
 
 - 画像は第三者（Google）のクラウドへ送信されます。院内規程・倫理審査・患者同意の範囲内でのみ使用してください。
