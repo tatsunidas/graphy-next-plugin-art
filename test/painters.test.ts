@@ -47,6 +47,32 @@ describe("画家カタログ", () => {
     expect(incomplete).toEqual([]);
   });
 
+  it("全員に代表作がある（サムネイル取得の鍵になる）", () => {
+    const missing = PAINTERS.filter((p) => !p.works || p.works.length === 0).map((p) => p.id);
+    expect(missing).toEqual([]);
+  });
+
+  it("代表作の日英がどちらも空でない", () => {
+    // 🔴 en は tools/fetch-thumbs.py が Met / Wikimedia を検索する鍵。
+    //    空だと、その画家だけ黙ってサムネイルが付かない。
+    const bad = PAINTERS.flatMap((p) =>
+      p.works
+        .filter((w) => !w.ja.trim() || !w.en.trim())
+        .map((w) => `${p.id}: ${JSON.stringify(w)}`),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it("全員に作風の一言がある", () => {
+    const missing = PAINTERS.filter((p) => !p.styleJa.trim()).map((p) => p.id);
+    expect(missing).toEqual([]);
+  });
+
+  it("作風の一言が長すぎない（一覧の 2 行目に収まる）", () => {
+    const tooLong = PAINTERS.filter((p) => p.styleJa.length > 40).map((p) => `${p.id}(${p.styleJa.length})`);
+    expect(tooLong).toEqual([]);
+  });
+
   it("除外すべき画家が紛れ込んでいない", () => {
     // 有名さに引きずられて足しやすいものを名指しで止める。
     const banned = ["matisse", "picasso", "chagall", "dali", "pollock", "hopper", "kahlo", "foujita", "hasui", "taikan"];
@@ -82,6 +108,11 @@ describe("searchPainters — 部分一致", () => {
 
   it("空文字なら全件（絞り込み無し）", () => {
     expect(searchPainters("  ").length).toBe(PAINTERS.length);
+  });
+
+  it("代表作の名前からも引ける", () => {
+    expect(searchPainters("神奈川沖浪裏").map((p) => p.id)).toContain("hokusai");
+    expect(searchPainters("Starry Night").map((p) => p.id)).toContain("vanGogh");
   });
 
   it("該当が無ければ空", () => {

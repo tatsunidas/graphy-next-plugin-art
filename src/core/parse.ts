@@ -17,14 +17,18 @@ export interface ParsedGeneration {
   imageMimeType: string | null;
   /** モデルが返した地の文（JSON ブロックを含む）。 */
   text: string;
-  /** 地の文から取り出した鑑賞情報。取れなければ null。 */
+  /** 地の文から取り出した鑑賞情報（題名と鑑賞文）。取れなければ null。 */
   note: AppreciationNote | null;
 }
 
 export interface AppreciationNote {
-  /** 画像に写っているもの。 */
-  subject: string;
-  /** 鑑賞のための説明。 */
+  /**
+   * 作品の題名の案。投稿先のタイトル欄（80 文字）へ貼る前提。
+   * **長さはここでは切らない。** 文の途中で切れた題名を貼らせるより、
+   * 超えたことを画面に出して直してもらうほうがよい。
+   */
+  title: string;
+  /** 鑑賞のための説明。投稿先の必須欄（800 文字）へ貼る前提。 */
   appreciation: string;
 }
 
@@ -54,6 +58,9 @@ function readInlineData(part: AnyRecord): { data: string; mimeType: string } | n
 /**
  * ```json ブロック（無ければ最初の { ... }）から鑑賞情報を取り出す。
  * **取れなくても例外にしない。** 画像が返っているなら、説明が無いだけで作品は成立する。
+ *
+ * <p>片方のキーしか無くても拾う。モデルが `title` だけ返すことも
+ * `appreciation` だけ返すこともあり、**半分でも無いよりはよい**。
  */
 export function extractNote(text: string): AppreciationNote | null {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
@@ -66,9 +73,9 @@ export function extractNote(text: string): AppreciationNote | null {
     try {
       const obj = asRecord(JSON.parse(candidate.slice(start, end + 1)));
       if (!obj) continue;
-      const subject = typeof obj.subject === "string" ? obj.subject.trim() : "";
+      const title = typeof obj.title === "string" ? obj.title.trim() : "";
       const appreciation = typeof obj.appreciation === "string" ? obj.appreciation.trim() : "";
-      if (subject || appreciation) return { subject, appreciation };
+      if (title || appreciation) return { title, appreciation };
     } catch {
       // 次の候補を試す
     }

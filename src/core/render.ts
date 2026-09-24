@@ -90,6 +90,108 @@ export async function rgbaToPng(rgba: Uint8ClampedArray, width: number, height: 
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+/** 画面に見えている範囲（`hostTypes.VisibleRegion` と同じ形。core は host に依存しない）。 */
+export interface Framing {
+  /** 四隅の画像画素座標。画面から見た 左上・右上・左下・右下。 */
+  corners: [number, number][];
+  screenWidth: number;
+  screenHeight: number;
+}
+
+/**
+ * 双線形でサンプルする。範囲外は背景（0）。
+ *
+ * <p>最近傍だと、拡大したときに階段が出て**画風の翻案より先に補間の粗さが目立つ**。
+ */
+function sampleBilinear(values: Float32Array, cols: number, rows: number, x: number, y: number, bg: number): number {
+  // 画像の外形は「画素の外縁」＝ -0.5 .. n-0.5。そこから出たら背景。
+  if (x < -0.5 || y < -0.5 || x > cols - 0.5 || y > rows - 0.5) return bg;
+
+  // 🔴 **座標を先に画素中心の範囲へ収める。** `Math.floor` の結果を後から切り詰めると、
+  //    x ∈ [-0.5, 0) で x0 = -1 → fx = x + 1 ≈ 0.75 となり、0 へ丸めた途端に
+  //    **重みが逆向き**（左端なのに隣の画素へ 0.75 寄る）になる。
+  //    実際これで出力の 1 行目と 2 行目が入れ替わった（test/render.test.ts が捕まえた）。
+  const cx = x < 0 ? 0 : x > cols - 1 ? cols - 1 : x;
+  const cy = y < 0 ? 0 : y > rows - 1 ? rows - 1 : y;
+  const x0 = Math.floor(cx);
+  const y0 = Math.floor(cy);
+  const fx = cx - x0;
+  const fy = cy - y0;
+  const x1 = x0 + 1 >= cols ? cols - 1 : x0 + 1;
+  const y1 = y0 + 1 >= rows ? rows - 1 : y0 + 1;
+  const v00 = values[y0 * cols + x0];
+  const v10 = values[y0 * cols + x1];
+  const v01 = values[y1 * cols + x0];
+  const v11 = values[y1 * cols + x1];
+  return v00 * (1 - fx) * (1 - fy) + v10 * fx * (1 - fy) + v01 * (1 - fx) * fy + v11 * fx * fy;
+}
+
+/**
+ * 画面に見えているとおりに切り出して、モダリティ値の格子を作る。
+ *
+ * <p>出力の画素 `(i, j)` は、四隅が張る平行四辺形の中を素直に内挿した位置から取る。
+ *
+ * ```
+ * P(u, v) = TL + u·(TR − TL) + v·(BL − TL)      u, v ∈ [0, 1]
+ * ```
+ *
+ * <p>回転・反転・拡大・パンは**すべて四隅に入っている**ので、ここでは場合分けをしない。
+ * 場合分けを持つと、反転と回転が重なったときのような**組み合わせでだけ壊れる**経路ができる。
+ *
+ * <p>🔴 **キャンバスは読まない**（このファイル冒頭の理由）。表示状態を反映するためであっても、
+ * 画面から取ると患者情報のオーバーレイが混入する経路が開く。あくまで画素から描く。
+ *
+ * @param bg 範囲外を埋める値。窓処理前のモダリティ値なので、窓の下端を渡すと黒になる
+ */
+export function resampleFraming(
+  values: Float32Array,
+  cols: number,
+  rows: number,
+  framing: Framing,
+  outW: number,
+  outH: number,
+  bg: number,
+): Float32Array {
+  const [tl, tr, bl] = framing.corners;
+  const ux = tr[0] - tl[0];
+  const uy = tr[1] - tl[1];
+  const vx = bl[0] - tl[0];
+  const vy = bl[1] - tl[1];
+  const out = new Float32Array(outW * outH);
+  for (let j = 0; j < outH; j++) {
+    // 画素の中心でサンプルする（端が半画素ずれないように）。
+    const v = (j + 0.5) / outH;
+    for (let i = 0; i < outW; i++) {
+      const u = (i + 0.5) / outW;
+      const x = tl[0] + u * ux + v * vx;
+      const y = tl[1] + u * uy + v * vy;
+      out[j * outW + i] = sampleBilinear(values, cols, rows, x, y, bg);
+    }
+  }
+  return out;
+}
+
+/**
+ * 出力の画素数を決める。画面上の縦横比を保ったまま長辺を `maxEdge` に収める。
+ *
+ * <p>元画像より細かくはしない（拡大しても、無い情報は増えない）。
+ */
+export function framingOutputSize(framing: Framing, maxEdge: number): { width: number; height: number } {
+  const [tl, tr, bl] = framing.corners;
+  // 切り出しが元画像の何画素ぶんか（斜めでも辺の長さで測る）。
+  const srcW = Math.hypot(tr[0] - tl[0], tr[1] - tl[1]);
+  const srcH = Math.hypot(bl[0] - tl[0], bl[1] - tl[1]);
+  const aspect = framing.screenWidth / framing.screenHeight;
+  // 画面の縦横比を保ちつつ、元の情報量を超えない大きさ。
+  let w = Math.min(maxEdge, Math.max(srcW, srcH * aspect));
+  let h = w / aspect;
+  if (h > maxEdge) {
+    h = maxEdge;
+    w = h * aspect;
+  }
+  return { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
+}
+
 /**
  * 送信用の画像を作る。長辺を `maxEdge` に収める（帯域と課金、そして送りすぎの抑制）。
  * 縮小は最近傍ではなく canvas の既定補間に任せる。

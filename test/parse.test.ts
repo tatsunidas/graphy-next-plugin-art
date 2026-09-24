@@ -27,12 +27,12 @@ describe("parseGeneration", () => {
   it("テキストと画像が混在していても両方取れる", () => {
     const r = parseGeneration(
       response([
-        { text: '```json\n{"subject":"胸部CT","appreciation":"静かな構図"}\n```' },
+        { text: '```json\n{"title":"青のゆらぎ","appreciation":"静かな構図"}\n```' },
         { inlineData: { mimeType: "image/png", data: IMAGE_B64 } },
       ]),
     );
     expect(r.image).not.toBeNull();
-    expect(r.note).toEqual({ subject: "胸部CT", appreciation: "静かな構図" });
+    expect(r.note).toEqual({ title: "青のゆらぎ", appreciation: "静かな構図" });
   });
 
   it("画像が無くてもテキストは活きる", () => {
@@ -58,18 +58,27 @@ describe("parseGeneration", () => {
 
 describe("extractNote", () => {
   it("```json ブロックから取り出す", () => {
-    expect(extractNote('前置き\n```json\n{"subject":"a","appreciation":"b"}\n```\n後置き')).toEqual({
-      subject: "a",
+    expect(extractNote('前置き\n```json\n{"title":"a","appreciation":"b"}\n```\n後置き')).toEqual({
+      title: "a",
       appreciation: "b",
     });
   });
 
   it("コードフェンスが無い素の JSON でも取り出す", () => {
-    expect(extractNote('{"subject":"a","appreciation":"b"}')).toEqual({ subject: "a", appreciation: "b" });
+    expect(extractNote('{"title":"a","appreciation":"b"}')).toEqual({ title: "a", appreciation: "b" });
   });
 
+  // モデルは片方だけ返すことがある。半分でも無いよりはよい。
   it("片方のキーしか無くても拾う", () => {
-    expect(extractNote('{"appreciation":"b"}')).toEqual({ subject: "", appreciation: "b" });
+    expect(extractNote('{"appreciation":"b"}')).toEqual({ title: "", appreciation: "b" });
+    expect(extractNote('{"title":"a"}')).toEqual({ title: "a", appreciation: "" });
+  });
+
+  // 投稿フォームの上限を超えていても、ここでは切らない。
+  // 文の途中で切れた文章を貼らせるより、UI に長さを出して直してもらう。
+  it("上限を超える長さでも切り詰めない", () => {
+    const long = "あ".repeat(900);
+    expect(extractNote(JSON.stringify({ title: "a", appreciation: long }))?.appreciation).toHaveLength(900);
   });
 
   it("JSON が無ければ null（例外にしない）", () => {
@@ -78,7 +87,7 @@ describe("extractNote", () => {
   });
 
   it("壊れた JSON でも null で済ませる", () => {
-    expect(extractNote("```json\n{subject:\n```")).toBeNull();
+    expect(extractNote("```json\n{title:\n```")).toBeNull();
   });
 });
 

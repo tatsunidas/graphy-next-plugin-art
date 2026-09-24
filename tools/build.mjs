@@ -34,4 +34,17 @@ const result = await build({
 
 const out = result.outputFiles[0];
 writeFileSync("ui.js", out.text);
-console.log(`ui.js を生成しました (${(out.contents.byteLength / 1024).toFixed(1)} KB)`);
+
+const kb = out.contents.byteLength / 1024;
+console.log(`ui.js を生成しました (${kb.toFixed(1)} KB)`);
+
+// 画家サムネイルを data URI で抱えているぶん、うっかり膨らみやすい。
+// 配信は localhost からなので致命的ではないが、気づかず太り続けないよう線を引く。
+const LIMIT_KB = 600;
+if (kb > LIMIT_KB) {
+  console.warn(
+    `⚠ ui.js が ${LIMIT_KB} KB を超えました (${kb.toFixed(1)} KB)。\n` +
+      "  src/core/thumbs.ts のサムネイル枚数か画質を見直してください" +
+      "（tools/fetch-thumbs.py の THUMB_PX / MAX_BYTES）。",
+  );
+}

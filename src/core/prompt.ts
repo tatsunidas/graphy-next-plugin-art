@@ -109,33 +109,52 @@ export interface PromptOptions {
   locale: "ja" | "en";
 }
 
+/** 投稿先（Art of GRAPHY）のタイトル欄の上限。 */
+export const TITLE_MAX_CHARS = 80;
+/** 投稿先（Art of GRAPHY）の「鑑賞のための説明」欄の上限。 */
+export const NOTE_MAX_CHARS = 800;
+
 /**
- * 送信するプロンプトを組み立てる。
+ * 元画像から「モダリティ・部位」の英文を組み立てる。
  *
- * <p>戻り値は同意ダイアログで**全文が利用者に表示される**。読まれる前提で書くこと。
+ * 🔴 **2 つのプロンプトで必ずこれを通す。** プロンプトが増えるたびに
+ * `facts` を直接埋め込むと、許可リストを素通りする経路がそこだけ開く。
+ * 以前 `CT^YAMADA TARO` が文字種フィルタを生き延びた穴と同じ形。
  */
-export function buildPrompt(opts: PromptOptions): string {
-  const { painter, facts, locale } = opts;
-  const style = STYLE_BY_ID.get(painter.styleId);
+function subjectPhrase(facts: SourceFacts): string {
   // 🔴 既定用語に一致しない値は捨てる。部位名が 1 つ落ちることより、氏名が 1 つ載るほうが重い。
   const modality = toModality(facts.modality);
   const bodyPart = toBodyPart(facts.bodyPart);
 
-  const subject = [
+  return [
     "a greyscale medical radiological image",
     modality ? `acquired with the ${modality} modality` : null,
     bodyPart ? `showing the ${bodyPart} region` : null,
   ]
     .filter(Boolean)
     .join(", ");
+}
 
-  const language = locale === "ja" ? "Japanese" : "English";
+/**
+ * 画像を生成させるプロンプトを組み立てる。
+ *
+ * <p>戻り値は同意ダイアログで**全文が利用者に表示される**。読まれる前提で書くこと。
+ *
+ * <h3>ここでは文章を書かせない</h3>
+ * 以前は同じ応答に鑑賞文の JSON も要求していたが、**画像モデルは画像だけを返して
+ * 地の文を返さない**（実機で `gemini-3.1-flash-image` が無言で欠落させた）。
+ * 鑑賞文は {@link buildNotePrompt} で別に取る。画像側の指示が短くなることで、
+ * 「画像の中に文字を描いてしまう」誘因も減る。
+ */
+export function buildImagePrompt(opts: PromptOptions): string {
+  const { painter } = opts;
+  const style = STYLE_BY_ID.get(painter.styleId);
 
   return [
     "You are helping to create a work of art that connects imaging science with aesthetics,",
     "in the spirit of the \"Art of Imaging\" section of a radiology journal.",
     "",
-    `Source image: ${subject}.`,
+    `Source image: ${subjectPhrase(opts.facts)}.`,
     "",
     "Task: reinterpret the given image as an original artwork, keeping its overall composition and",
     "anatomical structure recognisable, rendered in the following manner:",
@@ -149,13 +168,46 @@ export function buildPrompt(opts: PromptOptions): string {
     "    A signature will be added separately by the application.",
     "  - Do NOT invent or add anatomy, lesions, devices or findings that are not present in the source.",
     "  - Keep the result suitable for public exhibition.",
+  ].join("\n");
+}
+
+/**
+ * 出来上がった作品を見せて、鑑賞のための解説を書かせるプロンプト。
+ *
+ * <p>送るのは**生成した作品そのもの**で、元の DICOM 画像ではない。実際に出来た絵を
+ * 見て書くので記述が具体になり、しかも元画像を二度送らずに済む。
+ *
+ * <p>出力はそのまま vis-ionary.com の「Art of GRAPHY」投稿フォームへ貼る前提なので、
+ * 上限をフォームに合わせてある（タイトル {@link TITLE_MAX_CHARS} 文字 /
+ * 説明 {@link NOTE_MAX_CHARS} 文字）。作風とモダリティは投稿先が PNG メタデータから
+ * 自動表示するため、**本文に書かせない**（書かせると同じ情報が二重に出る）。
+ */
+export function buildNotePrompt(opts: PromptOptions): string {
+  const { painter, locale } = opts;
+  const style = STYLE_BY_ID.get(painter.styleId);
+  const language = locale === "ja" ? "Japanese" : "English";
+
+  return [
+    "The attached image is an artwork that was generated from a medical radiological image,",
+    "for the \"Art of Imaging\" section of a radiology journal.",
     "",
-    "Together with the image, return a short appreciation note as a JSON object in a ```json code block,",
-    `written in ${language}, with exactly these keys:`,
-    '  "subject"      — what is visible in the image, described in plain descriptive language',
-    '  "appreciation" — how to look at the resulting artwork: composition, colour, light, mood (2-4 sentences)',
+    `Source of the artwork: ${subjectPhrase(opts.facts)}.`,
+    `  Style: ${style ? style.nameEn : painter.styleId}`,
+    `  In the manner of: ${painter.nameEn}`,
     "",
-    "Do not include any patient information, identifiers, dates or institution names in the JSON.",
-    "Describe only what is visually present; do not offer a diagnosis or clinical interpretation.",
+    "Task: look at the attached artwork and write an appreciation note for a viewer.",
+    `Reply with a single JSON object in a \`\`\`json code block, written in ${language},`,
+    "with exactly these keys:",
+    `  "title"        — a title for this artwork (at most ${TITLE_MAX_CHARS} characters)`,
+    `  "appreciation" — how to look at this artwork (at most ${NOTE_MAX_CHARS} characters).`,
+    "                   Begin with what can be seen, then move on to composition, colour,",
+    "                   light, brushwork and mood. Describe THIS image, not the style in general.",
+    "",
+    "Constraints:",
+    "  - Do NOT include any patient information, identifiers, dates or institution names.",
+    "  - Do NOT offer a diagnosis, a finding or any clinical interpretation.",
+    "  - Do NOT name the painter, the style or the modality: they are shown separately.",
+    "  - Describe only what is visually present in the attached image.",
+    "  - Return the JSON only, with no commentary outside the code block.",
   ].join("\n");
 }

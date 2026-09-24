@@ -21,6 +21,26 @@ export interface ViewerTarget {
   modality: string;
 }
 
+/**
+ * 画面に見えている画像上の範囲。
+ *
+ * <p>🔑 **回転・左右上下反転・拡大・パン・Fit 倍率が、すべてこの 4 点に畳み込まれている。**
+ * プラグイン側で `rotation` / `zoom` / `pan` から組み立て直してはいけない——`pan` は
+ * world mm で、その原点は IPP（患者座標）だが**プラグインは IPP/IOP を取得できない**。
+ * さらに XA は幾何を持たず、world→画素の変換が成立しない（本体 `roiRead.ts` の注記）。
+ */
+export interface VisibleRegion {
+  /**
+   * 四隅の画像画素座標（0 origin＝最初の画素の中心が 0）。
+   * 並びは**画面から見た** 左上・右上・左下・右下。回転・反転が入っているので、
+   * 左上が画像の右下を指すこともある。
+   */
+  corners: [number, number][];
+  /** その範囲の画面上の大きさ（CSS px）。出力の縦横比に使う。 */
+  screenWidth: number;
+  screenHeight: number;
+}
+
 export interface ViewerViewState {
   tileId: string;
   windowCenter: number;
@@ -28,6 +48,19 @@ export interface ViewerViewState {
   unit: string;
   colormap: string | null;
   invert: boolean;
+  flipH: boolean;
+  flipV: boolean;
+  /** 度。 */
+  rotation: number;
+  /** Fit を 1.0 とした相対倍率。 */
+  zoom: number;
+  /** 既定（画像が中央）からのオフセット（world mm）。 */
+  pan: [number, number];
+  /**
+   * 画面に見えている範囲。**送信画像のフレーミングはこれだけを見る。**
+   * 算出できなければ null（そのときは画像全体を送る）。
+   */
+  visibleRegion: VisibleRegion | null;
 }
 
 export interface PixelData {
