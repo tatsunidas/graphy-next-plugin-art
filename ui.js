@@ -2971,8 +2971,7 @@ function labeled(label, control) {
 var PANEL = {
   position: "fixed",
   top: "60px",
-  left: "50%",
-  transform: "translateX(-50%)",
+  right: "16px",
   width: "620px",
   maxWidth: "94vw",
   maxHeight: "86vh",

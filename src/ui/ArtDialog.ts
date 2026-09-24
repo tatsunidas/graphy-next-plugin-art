@@ -755,11 +755,23 @@ function labeled(label: string, control: HTMLElement): HTMLElement {
 }
 
 // ── スタイル ─────────────────────────────────────────────────────────────
+/**
+ * パネルの位置。
+ *
+ * <p>🔴 **画像の真ん中に置かない。** 以前は `left:50%` で中央に出していたが、ビューアの画像も
+ * 中央に描かれるため、**パネルが画像をほぼ覆ってしまう**。この機能は「画面で構図を決めて、
+ * それを送る」ものなので、覆われると**構図を決める操作そのものができない**
+ * ——拡大しようとドラッグしてもパネルを掴むだけで、ビューアは 1 ミリも動かない。
+ *
+ * <p>2026-09-24 に利用者から「拡大・パンニングが Image to be sent に引き継がれない」と
+ * 報告された。実機で測ると切り出し自体は正しく追従しており（automator の
+ * `viewStateFramingCheck` が 9/9）、**掴めていなかったのが実体**だった。
+ * 右端へ寄せて画像を空ける。足りなければヘッダでドラッグして動かせる。
+ */
 const PANEL: Partial<CSSStyleDeclaration> = {
   position: "fixed",
   top: "60px",
-  left: "50%",
-  transform: "translateX(-50%)",
+  right: "16px",
   width: "620px",
   maxWidth: "94vw",
   maxHeight: "86vh",
