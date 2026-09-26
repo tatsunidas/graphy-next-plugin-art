@@ -130,3 +130,37 @@ export function readBlockReason(raw: unknown): string | null {
   if (typeof finish === "string" && finish !== "STOP") return finish;
   return null;
 }
+
+
+/**
+ * 本体からの結果を 1 つの形へ揃える。
+ *
+ * <p>🔑 **本体が正規化してくれるならそれを使い、してくれないなら自分で解釈する。**
+ * 0.3.0 の本体は提供元の生レスポンス（`data`）しか返さないが、0.3.1 以降は
+ * `image` / `text` を提供元非依存の形で返す（本体の `fw/ai-routing-design.md` §3.2）。
+ * このプラグインは `engines.graphy >= 0.3.0` を名乗っているので、**両方を受けられないと
+ * 古い本体で動かなくなる。**
+ *
+ * <p>🔴 **判定をここ 1 か所に閉じる。** 作品生成と鑑賞文の 2 経路で別々に書くと、
+ * 片方だけ古い解釈のまま残る（そして例外は出ず、画像か文章が黙って落ちるだけになる）。
+ */
+export function readGeneration(outcome: {
+  image?: { bytes: Uint8Array; mimeType: string };
+  text?: string;
+  blockReason?: string;
+  data?: unknown;
+}): ParsedGeneration & { blockReason?: string } {
+  // 本体が畳んでいる場合（0.3.1 以降）。
+  if (outcome.image || outcome.text !== undefined) {
+    const text = outcome.text ?? "";
+    return {
+      image: outcome.image ? outcome.image.bytes : null,
+      imageMimeType: outcome.image ? outcome.image.mimeType : null,
+      text,
+      note: extractNote(text),
+      blockReason: outcome.blockReason,
+    };
+  }
+  // 古い本体。生レスポンスを自分で読む。
+  return { ...parseGeneration(outcome.data), blockReason: outcome.blockReason };
+}

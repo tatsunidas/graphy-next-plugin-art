@@ -32,19 +32,34 @@ import { SIGNATURE_FONTS, SIGNATURE_POSITIONS, drawSignature, type SignatureOpti
 import { pHash, sha256Hex } from "../core/phash";
 import { embedGraphyArt } from "../core/pngMeta";
 import { buildMetadata, defaultFileName } from "../core/metadata";
-import { parseGeneration, readBlockReason, type AppreciationNote } from "../core/parse";
+import { readGeneration, type AppreciationNote } from "../core/parse";
 import { copyText } from "./clipboard";
 
 declare const __PLUGIN_VERSION__: string;
 
-const MODEL_FALLBACK = "gemini-3.1-flash-image";
 /**
- * 解説文を書かせるモデル。
+ * モデルは**本体が決める**（利用者の環境設定に従う）。
  *
- * 🔴 **画像モデルとは別にする。** `gemini-3.1-flash-image` は画像だけを返して
- * 地の文を返さず、実機で鑑賞文が丸ごと欠落した。文章はテキストモデルに書かせる。
+ * <p>🔑 このプラグインは用途（`capability`）を頼むだけにしてある。本体が提供元を増やしても
+ * ここは書き換えなくてよい（本体の `fw/ai-routing-design.md`）。
+ *
+ * 🔴 **画像用とテキスト用は別のモデルになる。** `gemini-3.1-flash-image` は画像だけを返して
+ * 地の文を返さず、実機で鑑賞文が丸ごと欠落した。用途を分けることで本体が別々に選ぶ。
  */
-const TEXT_MODEL_FALLBACK = "gemini-2.5-flash";
+const CAPABILITY_ARTWORK = "image-to-image" as const;
+const CAPABILITY_NOTE = "image-to-text" as const;
+
+/**
+ * メタデータに書くモデル名が本体から返らなかったときの値。
+ *
+ * <p>🔑 **これは推測ではない。** 0.3.0 の本体は `provenance` を返さないが、その版は
+ * 環境設定のモデルを**読んでいなかった**ので、画像生成には必ずこのモデルが使われていた。
+ * 0.3.1 以降は本体が実際に使ったモデルを返すので、そちらを優先する。
+ *
+ * <p>🔴 **分からないものを埋めるための既定値ではない。** 将来この前提が崩れるなら、
+ * 空にする（記録が無いことを記録する）ほうが正しい。
+ */
+const ARTWORK_MODEL_ON_0_3_0 = "gemini-3.1-flash-image";
 
 /**
  * 表示状態を見に行く間隔（ミリ秒）。
@@ -429,10 +444,8 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
         facts: { modality, bodyPart },
         locale: lang,
       });
-      const model = MODEL_FALLBACK;
-
       const outcome = await host.ai.generate({
-        model,
+        capability: CAPABILITY_ARTWORK,
         prompt,
         imageBytes: sourcePng,
         mimeType: "image/png",
@@ -445,9 +458,9 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
         return;
       }
 
-      const parsed = parseGeneration(outcome.data);
+      const parsed = readGeneration(outcome);
       if (!parsed.image) {
-        const reason = readBlockReason(outcome.data);
+        const reason = parsed.blockReason;
         setStatus(reason ? t("errBlocked", { reason }) : t("errNoImage"), "error");
         return;
       }
@@ -456,7 +469,9 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
       const meta = buildMetadata({
         appVersion: "",
         pluginVersion: typeof __PLUGIN_VERSION__ === "string" ? __PLUGIN_VERSION__ : "",
-        model,
+        // 🔴 **本体が実際に使ったモデルを記録する。** プラグインが送った定数ではない
+        //    ——利用者が環境設定でモデルを変えていれば、記録と実物が食い違う。
+        model: outcome.provenance?.model ?? ARTWORK_MODEL_ON_0_3_0,
         styleId: selectedPainter.styleId,
         painterId: selectedPainter.id,
         painterName: selectedPainter.nameEn,
@@ -499,7 +514,7 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
     const ctx = noteContext;
 
     const outcome = await host.ai.generate({
-      model: TEXT_MODEL_FALLBACK,
+      capability: CAPABILITY_NOTE,
       prompt: buildNotePrompt({
         painter: ctx.painter,
         facts: { modality: ctx.modality, bodyPart: ctx.bodyPart },
@@ -520,9 +535,10 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
       return null;
     }
 
-    const note = parseGeneration(outcome.data).note;
+    const read = readGeneration(outcome);
+    const note = read.note;
     if (!note) {
-      const reason = readBlockReason(outcome.data);
+      const reason = read.blockReason;
       setStatus(reason ? t("errBlocked", { reason }) : t("errNoteEmpty"), "error");
       return null;
     }

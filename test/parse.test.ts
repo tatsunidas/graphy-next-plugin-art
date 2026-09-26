@@ -2,7 +2,7 @@
  * Gemini レスポンス解析の検査。キー名の揺れと「画像が返らない」場合の扱いが要点。
  */
 import { describe, expect, it } from "vitest";
-import { extractNote, parseGeneration, readBlockReason } from "../src/core/parse";
+import { extractNote, parseGeneration, readBlockReason, readGeneration } from "../src/core/parse";
 
 const IMAGE_B64 = Buffer.from([0x89, 0x50, 0x4e, 0x47]).toString("base64");
 
@@ -102,5 +102,62 @@ describe("readBlockReason", () => {
 
   it("正常終了なら null", () => {
     expect(readBlockReason(response([{ text: "ok" }], { finishReason: "STOP" }))).toBeNull();
+  });
+});
+
+// ── 本体からの結果の読み方（新旧どちらの本体でも動くこと） ────────────────────
+//
+// 🔑 0.3.0 の本体は提供元の生レスポンス（data）しか返さない。0.3.1 以降は
+// image / text を提供元非依存の形で返す。このプラグインは `>=0.3.0` を名乗るので、
+// **両方を受けられないと古い本体で動かなくなる**（しかも例外は出ず、画像か文章が黙って落ちる）。
+describe("readGeneration — 正規化済みと生レスポンスの両対応", () => {
+  const IMG = new Uint8Array([9, 8, 7]);
+
+  it("本体が畳んでくれているならそれを使う（0.3.1 以降）", () => {
+    const r = readGeneration({
+      image: { bytes: IMG, mimeType: "image/png" },
+      text: '```json\n{"title":"題","appreciation":"文"}\n```',
+    });
+    expect(r.image).toBe(IMG);
+    expect(r.imageMimeType).toBe("image/png");
+    expect(r.note).toEqual({ title: "題", appreciation: "文" });
+  });
+
+  it("🔴 古い本体（生レスポンスだけ）でも読める", () => {
+    const r = readGeneration({
+      data: {
+        candidates: [
+          {
+            content: {
+              parts: [
+                { text: '{"title":"旧","appreciation":"旧文"}' },
+                { inlineData: { mimeType: "image/png", data: "AAECAw==" } },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(r.image).not.toBeNull();
+    expect(r.note).toEqual({ title: "旧", appreciation: "旧文" });
+  });
+
+  it("テキストだけ返った場合（鑑賞文の経路）", () => {
+    const r = readGeneration({ text: "ただの文章" });
+    expect(r.image).toBeNull();
+    expect(r.text).toBe("ただの文章");
+  });
+
+  it("🔴 止められた理由をそのまま渡す（案内を分けるため）", () => {
+    const r = readGeneration({ blockReason: "SAFETY" });
+    expect(r.image).toBeNull();
+    expect(r.blockReason).toBe("SAFETY");
+  });
+
+  it("何も無くても例外にしない", () => {
+    const r = readGeneration({});
+    expect(r.image).toBeNull();
+    expect(r.text).toBe("");
+    expect(r.note).toBeNull();
   });
 });

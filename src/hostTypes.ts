@@ -74,9 +74,19 @@ export interface PixelData {
   unit: string;
 }
 
+/** 用途。**提供元ではなくこれで頼む**（本体の `fw/ai-routing-design.md` §2）。 */
+export type AiCapability = "image-to-image" | "image-to-text";
+
 /** `host.ai.generate()` の要求（H40）。 */
 export interface AiGenerationRequest {
-  model: string;
+  /**
+   * 何をしてほしいか。**モデルも宛先も本体が決める**（利用者の環境設定に従う）。
+   *
+   * <p>🔑 これを使う限り、本体が提供元を増やしてもこのプラグインは書き換えなくてよい。
+   */
+  capability?: AiCapability;
+  /** @deprecated `capability` を使う。古い本体（0.3.0）向けのフォールバックにだけ使う。 */
+  model?: string;
   apiVersion?: string;
   prompt: string;
   imageBytes: Uint8Array;
@@ -84,11 +94,37 @@ export interface AiGenerationRequest {
   /** 同意を覚える単位。シリーズ UID を渡す。 */
   scopeKey?: string;
   temperature?: number;
+  /** @deprecated `capability` から決まる。 */
   responseModalities?: string[];
 }
 
+/**
+ * `host.ai.generate()` の結果。
+ *
+ * <p>🔑 `image` / `text` は**提供元非依存**。本体のアダプタが畳んでくれる。
+ *
+ * <p>⚠ **0.3.0 の本体はこれを返さない**（`data` に生レスポンスが来る）。
+ * このプラグインは両方を受けられるようにしてある（`readGeneration`）。
+ */
+/** どこで何によって作られたか。**0.3.1 以降の本体だけが返す。** */
+export interface AiProvenance {
+  providerId: string;
+  kind: string;
+  model: string;
+  endpointHost: string;
+}
+
 export type AiGenerationOutcome =
-  | { ok: true; data: unknown }
+  | {
+      ok: true;
+      image?: { bytes: Uint8Array; mimeType: string };
+      text?: string;
+      blockReason?: string;
+      /** 実際に使われた提供元とモデル。**作品のメタデータに記録する。** */
+      provenance?: AiProvenance;
+      /** @deprecated 提供元の生レスポンス。古い本体向け。 */
+      data?: unknown;
+    }
   | { ok: false; error: string; status?: number; kind?: string };
 
 export interface PluginSaveFileOptions {

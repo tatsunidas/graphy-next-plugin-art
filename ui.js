@@ -2385,15 +2385,18 @@ function parseGeneration(raw) {
   const text = texts.join("\n").trim();
   return { image, imageMimeType, text, note: extractNote(text) };
 }
-function readBlockReason(raw) {
-  const root = asRecord(raw);
-  const feedback = asRecord(root?.promptFeedback);
-  if (typeof feedback?.blockReason === "string") return feedback.blockReason;
-  const candidates = root?.candidates;
-  const first = Array.isArray(candidates) ? asRecord(candidates[0]) : null;
-  const finish = first?.finishReason;
-  if (typeof finish === "string" && finish !== "STOP") return finish;
-  return null;
+function readGeneration(outcome) {
+  if (outcome.image || outcome.text !== void 0) {
+    const text = outcome.text ?? "";
+    return {
+      image: outcome.image ? outcome.image.bytes : null,
+      imageMimeType: outcome.image ? outcome.image.mimeType : null,
+      text,
+      note: extractNote(text),
+      blockReason: outcome.blockReason
+    };
+  }
+  return { ...parseGeneration(outcome.data), blockReason: outcome.blockReason };
 }
 
 // src/ui/clipboard.ts
@@ -2425,8 +2428,9 @@ function copyText(text) {
 }
 
 // src/ui/ArtDialog.ts
-var MODEL_FALLBACK = "gemini-3.1-flash-image";
-var TEXT_MODEL_FALLBACK = "gemini-2.5-flash";
+var CAPABILITY_ARTWORK = "image-to-image";
+var CAPABILITY_NOTE = "image-to-text";
+var ARTWORK_MODEL_ON_0_3_0 = "gemini-3.1-flash-image";
 var VIEW_POLL_MS = 300;
 function openArtDialog(host) {
   let closeDialog = () => void 0;
@@ -2714,9 +2718,8 @@ function openArtDialog(host) {
         facts: { modality, bodyPart },
         locale: lang
       });
-      const model = MODEL_FALLBACK;
       const outcome = await host.ai.generate({
-        model,
+        capability: CAPABILITY_ARTWORK,
         prompt,
         imageBytes: sourcePng,
         mimeType: "image/png",
@@ -2727,9 +2730,9 @@ function openArtDialog(host) {
         setStatus(errorMessage(outcome.error), outcome.error === "canceled" ? "info" : "error");
         return;
       }
-      const parsed = parseGeneration(outcome.data);
+      const parsed = readGeneration(outcome);
       if (!parsed.image) {
-        const reason = readBlockReason(outcome.data);
+        const reason = parsed.blockReason;
         setStatus(reason ? t("errBlocked", { reason }) : t("errNoImage"), "error");
         return;
       }
@@ -2737,7 +2740,9 @@ function openArtDialog(host) {
       const meta = buildMetadata({
         appVersion: "",
         pluginVersion: true ? "0.1.0" : "",
-        model,
+        // 🔴 **本体が実際に使ったモデルを記録する。** プラグインが送った定数ではない
+        //    ——利用者が環境設定でモデルを変えていれば、記録と実物が食い違う。
+        model: outcome.provenance?.model ?? ARTWORK_MODEL_ON_0_3_0,
         styleId: selectedPainter.styleId,
         painterId: selectedPainter.id,
         painterName: selectedPainter.nameEn,
@@ -2766,7 +2771,7 @@ function openArtDialog(host) {
     if (!artwork || !noteContext) return null;
     const ctx = noteContext;
     const outcome = await host.ai.generate({
-      model: TEXT_MODEL_FALLBACK,
+      capability: CAPABILITY_NOTE,
       prompt: buildNotePrompt({
         painter: ctx.painter,
         facts: { modality: ctx.modality, bodyPart: ctx.bodyPart },
@@ -2785,9 +2790,10 @@ function openArtDialog(host) {
       setStatus(msg ? t("errNoteFailed", { error: msg }) : "", outcome.error === "canceled" ? "info" : "error");
       return null;
     }
-    const note = parseGeneration(outcome.data).note;
+    const read = readGeneration(outcome);
+    const note = read.note;
     if (!note) {
-      const reason = readBlockReason(outcome.data);
+      const reason = read.blockReason;
       setStatus(reason ? t("errBlocked", { reason }) : t("errNoteEmpty"), "error");
       return null;
     }
