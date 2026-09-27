@@ -688,10 +688,13 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
     if (note?.appreciation) {
       resultText.append(el("div", { style: MUTED }, [t("noteHint")]));
     }
-    // 解説が取れなかったときだけ、作り直す手立てを出す。
+    // 🔑 **解説が取れていても出す**（2026-09-27 に直した）。
+    //    以前は「取れなかったとき」だけ出していたが、**取れていても作り直したいことがある**
+    //    ——投稿欄の上限（800 文字）を超えた／内容が画に合っていない。そのために作品ごと
+    //    作り直すのは、画像生成の課金が 1 回増えるだけ無駄。解説だけなら文章 1 回分で済む。
     // 🔴 生成中は出さない。状態表示が「解説を生成中…」なのに
     //    「作り直す」が並ぶと、何が起きているのか読めなくなる。
-    retryNoteBtn.style.display = note?.appreciation || busy ? "none" : "inline-block";
+    retryNoteBtn.style.display = busy ? "none" : "inline-block";
     resultText.append(retryNoteBtn);
     (resultBox as HTMLElement).style.display = "block";
   }

@@ -2911,7 +2911,7 @@ function openArtDialog(host) {
     if (note?.appreciation) {
       resultText.append(el("div", { style: MUTED }, [t("noteHint")]));
     }
-    retryNoteBtn.style.display = note?.appreciation || busy ? "none" : "inline-block";
+    retryNoteBtn.style.display = busy ? "none" : "inline-block";
     resultText.append(retryNoteBtn);
     resultBox.style.display = "block";
   }
