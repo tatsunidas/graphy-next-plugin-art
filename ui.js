@@ -1861,6 +1861,8 @@ function toBodyPart(raw) {
 }
 var TITLE_MAX_CHARS = 80;
 var NOTE_MAX_CHARS = 800;
+var NOTE_TARGET_CHARS = 450;
+var NOTE_SENTENCES = "four to six";
 function subjectPhrase(facts) {
   const modality = toModality(facts.modality);
   const bodyPart = toBodyPart(facts.bodyPart);
@@ -1909,9 +1911,11 @@ function buildNotePrompt(opts) {
     `Reply with a single JSON object in a \`\`\`json code block, written in ${language},`,
     "with exactly these keys:",
     `  "title"        \u2014 a title for this artwork (at most ${TITLE_MAX_CHARS} characters)`,
-    `  "appreciation" \u2014 how to look at this artwork (at most ${NOTE_MAX_CHARS} characters).`,
-    "                   Begin with what can be seen, then move on to composition, colour,",
-    "                   light, brushwork and mood. Describe THIS image, not the style in general.",
+    `  "appreciation" \u2014 how to look at this artwork.`,
+    `                   Write ${NOTE_SENTENCES} sentences, about ${NOTE_TARGET_CHARS} ${language} characters in total,`,
+    `                   and never more than ${NOTE_MAX_CHARS} ${language} characters (count characters, not words or tokens).`,
+    "                   Cover three things only: what can be seen, then the composition and colour,",
+    "                   then the overall impression. Describe THIS image, not the style in general.",
     "",
     "Constraints:",
     "  - Do NOT include any patient information, identifiers, dates or institution names.",

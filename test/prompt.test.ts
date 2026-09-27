@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildImagePrompt,
   buildNotePrompt,
+  NOTE_MAX_CHARS,
+  NOTE_TARGET_CHARS,
   sanitizeFact,
   toBodyPart,
   toModality,
@@ -122,7 +124,36 @@ describe("buildNotePrompt", () => {
   it("投稿フォームの上限を指示に入れる", () => {
     const p = buildNotePrompt({ painter: hokusai, facts, locale: "ja" });
     expect(p).toContain("80 characters");
-    expect(p).toContain("800 characters");
+    expect(p).toContain("800 Japanese characters");
+  });
+
+  /**
+   * 🚨 2026-09-27 の利用者報告「説明文がいつも 800 文字を超える」への対処。
+   *
+   * 🔴 **生成モデルは文字を数えられない。** 上限だけ伝えると毎回 1400 文字前後になった
+   * （日本語 1409 文字 ≒ 800 トークン＝モデルは自分の数え方で「800」を守っていた）。
+   * しかも以前の指示は**観点を 6 つ**挙げており、日本語で 6 つ語れば上限に収まらない
+   * ——**指示の中身が同じ指示の上限と矛盾していた**。
+   */
+  it("🔴 上限だけでなく、狙う長さと文の数を渡す（モデルは数を守れない前提）", () => {
+    const p = buildNotePrompt({ painter: hokusai, facts, locale: "ja" });
+    // 上限を見込んで低く取った目標。
+    expect(p).toContain(`${NOTE_TARGET_CHARS} Japanese characters`);
+    // 文字数より守られやすい単位。
+    expect(p).toContain("four to six sentences");
+    // 出力言語の文字として数えさせる（トークンで数えられると 1.7 倍になる）。
+    expect(p).toMatch(/count characters, not words or tokens/);
+  });
+
+  it("🔴 触れさせる観点は 3 つまで（6 つ挙げると上限に収まらない）", () => {
+    const p = buildNotePrompt({ painter: hokusai, facts, locale: "ja" });
+    expect(p).toContain("Cover three things only");
+    // 以前ここに並んでいた 6 観点の名残が無いこと。
+    expect(p).not.toMatch(/light, brushwork and mood/);
+  });
+
+  it("狙う長さは上限より十分に低い（1.7 倍に膨らんでも収まる）", () => {
+    expect(NOTE_TARGET_CHARS * 1.7).toBeLessThan(NOTE_MAX_CHARS);
   });
 
   it("説明の言語がロケールで切り替わる", () => {

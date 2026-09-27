@@ -113,6 +113,21 @@ export interface PromptOptions {
 export const TITLE_MAX_CHARS = 80;
 /** 投稿先（Art of GRAPHY）の「鑑賞のための説明」欄の上限。 */
 export const NOTE_MAX_CHARS = 800;
+/**
+ * 説明文に狙わせる長さ。**上限よりかなり低く取ってある。**
+ *
+ * <p>🔴 **生成モデルは文字を数えられない。** 上限だけを伝えると必ず超える
+ * （実機で毎回 1400 文字前後になった。2026-09-27・利用者報告）。
+ * 日本語 1409 文字 ≒ 800 トークンなので、**モデルは「800」を自分の数え方で守っていた**
+ * と見られる。
+ *
+ * <p>だから**超過ぶんを見込んだ目標**を渡す。1.7 倍に膨らんでも上限に収まる値
+ * （450 × 1.7 ≒ 765）。**上限を言うだけで守らせようとしないこと。**
+ * アプリ側で切ることはしない（利用者の判断・2026-09-27）——文章のどこを削るかは書いた人が決める。
+ */
+export const NOTE_TARGET_CHARS = 450;
+/** 説明文の文の数。**文字数より守られやすい単位**なので、こちらを主に頼む。 */
+export const NOTE_SENTENCES = "four to six";
 
 /**
  * 元画像から「モダリティ・部位」の英文を組み立てる。
@@ -181,6 +196,13 @@ export function buildImagePrompt(opts: PromptOptions): string {
  * 上限をフォームに合わせてある（タイトル {@link TITLE_MAX_CHARS} 文字 /
  * 説明 {@link NOTE_MAX_CHARS} 文字）。作風とモダリティは投稿先が PNG メタデータから
  * 自動表示するため、**本文に書かせない**（書かせると同じ情報が二重に出る）。
+ *
+ * <h3>🔴 長さは「文の数」で頼む（2026-09-27 に直した）</h3>
+ * 以前は上限だけを伝え、**触れるべき観点を 6 つ**挙げていた（見えるもの・構図・色・光・筆致・
+ * 雰囲気）。日本語で 6 つを語れば 1200〜1500 文字になるので、**指示の中身が同じ指示の上限と
+ * 矛盾していた**——モデルは抽象的な数より具体的な「この 6 点を書け」に従う。
+ * → **観点を 3 つに減らし、文の数（モデルが比較的守れる単位）と
+ * {@link NOTE_TARGET_CHARS} を渡す。** 上限は「超えるな」ではなく念のための線として残す。
  */
 export function buildNotePrompt(opts: PromptOptions): string {
   const { painter, locale } = opts;
@@ -199,9 +221,11 @@ export function buildNotePrompt(opts: PromptOptions): string {
     `Reply with a single JSON object in a \`\`\`json code block, written in ${language},`,
     "with exactly these keys:",
     `  "title"        — a title for this artwork (at most ${TITLE_MAX_CHARS} characters)`,
-    `  "appreciation" — how to look at this artwork (at most ${NOTE_MAX_CHARS} characters).`,
-    "                   Begin with what can be seen, then move on to composition, colour,",
-    "                   light, brushwork and mood. Describe THIS image, not the style in general.",
+    `  "appreciation" — how to look at this artwork.`,
+    `                   Write ${NOTE_SENTENCES} sentences, about ${NOTE_TARGET_CHARS} ${language} characters in total,`,
+    `                   and never more than ${NOTE_MAX_CHARS} ${language} characters (count characters, not words or tokens).`,
+    "                   Cover three things only: what can be seen, then the composition and colour,",
+    "                   then the overall impression. Describe THIS image, not the style in general.",
     "",
     "Constraints:",
     "  - Do NOT include any patient information, identifiers, dates or institution names.",
