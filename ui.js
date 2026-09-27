@@ -56,6 +56,11 @@ function stopWheelPropagation(panel) {
   panel.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
 }
 
+// src/ui/retryNote.ts
+function retryNoteState(s) {
+  return { visible: s.hasArtwork, disabled: s.busy };
+}
+
 // src/i18n/messages.ts
 var JA = {
   title: "Art of Imaging",
@@ -2614,7 +2619,13 @@ function openArtDialog(host) {
   const generateBtn = el("button", { style: PRIMARY_BTN, dataset: { testid: "art-generate" } }, [t("generate")]);
   const saveBtn = el("button", { style: BTN, dataset: { testid: "art-save" } }, [t("save")]);
   const closeBtn = el("button", { style: BTN, dataset: { testid: "art-close-footer" }, onclick: () => closeDialog() }, [t("close")]);
+  function applyRetryNoteState() {
+    const s = retryNoteState({ hasArtwork: !!artwork, busy });
+    retryNoteBtn.style.display = s.visible ? "inline-block" : "none";
+    retryNoteBtn.disabled = s.disabled;
+  }
   function updateButtons() {
+    applyRetryNoteState();
     generateBtn.disabled = busy || !selectedPainter || !sourcePng;
     generateBtn.textContent = busy ? t("generating") : t("generate");
     saveBtn.disabled = busy || !artwork;
@@ -2808,7 +2819,6 @@ function openArtDialog(host) {
     if (!artwork || !noteContext || busy) return;
     busy = true;
     updateButtons();
-    retryNoteBtn.disabled = true;
     setStatus(t("generatingNote"));
     try {
       const note = await generateNote();
@@ -2817,7 +2827,6 @@ function openArtDialog(host) {
       setStatus(t("errGeneric", { error: String(e) }), "error");
     } finally {
       busy = false;
-      retryNoteBtn.disabled = false;
       updateButtons();
     }
   }
@@ -2911,7 +2920,7 @@ function openArtDialog(host) {
     if (note?.appreciation) {
       resultText.append(el("div", { style: MUTED }, [t("noteHint")]));
     }
-    retryNoteBtn.style.display = busy ? "none" : "inline-block";
+    applyRetryNoteState();
     resultText.append(retryNoteBtn);
     resultBox.style.display = "block";
   }

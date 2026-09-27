@@ -7,6 +7,7 @@
  */
 import type { PixelData, Viewer2DPluginHost, ViewerViewState } from "../hostTypes";
 import { el, makeDraggable, stopWheelPropagation } from "./dom";
+import { retryNoteState } from "./retryNote";
 import { makeT, type Lang } from "../i18n/messages";
 import { searchPainters, type Painter } from "../core/painters";
 import { PAINTER_THUMBS } from "../core/thumbs";
@@ -297,7 +298,15 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
   const saveBtn = el("button", { style: BTN, dataset: { testid: "art-save" } }, [t("save")]) as HTMLButtonElement;
   const closeBtn = el("button", { style: BTN, dataset: { testid: "art-close-footer" }, onclick: () => closeDialog() }, [t("close")]);
 
+  /** 「解説を作り直す」の見え方。**表示の代入はこの 1 か所だけ。** */
+  function applyRetryNoteState(): void {
+    const s = retryNoteState({ hasArtwork: !!artwork, busy });
+    retryNoteBtn.style.display = s.visible ? "inline-block" : "none";
+    retryNoteBtn.disabled = s.disabled;
+  }
+
   function updateButtons(): void {
+    applyRetryNoteState();
     generateBtn.disabled = busy || !selectedPainter || !sourcePng;
     generateBtn.textContent = busy ? t("generating") : t("generate");
     saveBtn.disabled = busy || !artwork;
@@ -551,7 +560,6 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
     if (!artwork || !noteContext || busy) return;
     busy = true;
     updateButtons();
-    retryNoteBtn.disabled = true;
     setStatus(t("generatingNote"));
     try {
       const note = await generateNote();
@@ -560,7 +568,6 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
       setStatus(t("errGeneric", { error: String(e) }), "error");
     } finally {
       busy = false;
-      retryNoteBtn.disabled = false;
       updateButtons();
     }
   }
@@ -688,13 +695,8 @@ export function openArtDialog(host: Viewer2DPluginHost): void {
     if (note?.appreciation) {
       resultText.append(el("div", { style: MUTED }, [t("noteHint")]));
     }
-    // 🔑 **解説が取れていても出す**（2026-09-27 に直した）。
-    //    以前は「取れなかったとき」だけ出していたが、**取れていても作り直したいことがある**
-    //    ——投稿欄の上限（800 文字）を超えた／内容が画に合っていない。そのために作品ごと
-    //    作り直すのは、画像生成の課金が 1 回増えるだけ無駄。解説だけなら文章 1 回分で済む。
-    // 🔴 生成中は出さない。状態表示が「解説を生成中…」なのに
-    //    「作り直す」が並ぶと、何が起きているのか読めなくなる。
-    retryNoteBtn.style.display = busy ? "none" : "inline-block";
+    // 判定は retryNote.ts（🔴 ここに条件を書き戻さないこと。busy を混ぜて一度壊した）。
+    applyRetryNoteState();
     resultText.append(retryNoteBtn);
     (resultBox as HTMLElement).style.display = "block";
   }
