@@ -1,4 +1,4 @@
-/* Art of Imaging v0.1.0 — Art of Imaging for GRAPHY-Next
+/* Art of Imaging v0.1.1 — Art of Imaging for GRAPHY-Next
  * https://github.com/tatsunidas/graphy-next-plugin-art
  * 研究・教育・芸術表現の目的。診断機器ではありません。
  * このファイルは tools/build.mjs が src/ から生成します。直接編集しないこと。
@@ -2739,7 +2739,7 @@ function openArtDialog(host) {
       artwork = await composeArtwork(parsed.image, selectedPainter, signature);
       const meta = buildMetadata({
         appVersion: "",
-        pluginVersion: true ? "0.1.0" : "",
+        pluginVersion: true ? "0.1.1" : "",
         // 🔴 **本体が実際に使ったモデルを記録する。** プラグインが送った定数ではない
         //    ——利用者が環境設定でモデルを変えていれば、記録と実物が食い違う。
         model: outcome.provenance?.model ?? ARTWORK_MODEL_ON_0_3_0,

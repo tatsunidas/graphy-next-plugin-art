@@ -1,7 +1,7 @@
 {
   "id": "art",
   "name": "Art of Imaging",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "graphy": ">=0.3.0",
     "os": [
