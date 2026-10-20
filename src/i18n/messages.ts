@@ -58,10 +58,10 @@ const JA = {
   errNoTarget: "対象の画像がありません。2D ビューアで画像を開いてから実行してください。",
   errNoPixels: "画素を読み出せませんでした。",
   errNoPainter: "画家を 1 名選んでください。",
-  errNoKey: "Gemini の API キーが未設定です。環境設定 ＞ 外部 AI で設定してください。",
+  errNoKey: "外部 AI の API キーが未設定です。環境設定 ＞ 外部 AI で、使う提供元のキーを設定してください。",
   errPermission: "このプラグインには外部送信の権限がありません。",
   errDesktopOnly: "この機能はデスクトップ版でのみ利用できます。",
-  errNoImage: "画像が返りませんでした。",
+  errNoImage: "画像が返りませんでした。環境設定 ＞ 外部 AI の「画像→画像」に、画像編集に対応したモデルが設定されているか確認してください。",
   errBlocked: "生成が拒否されました（理由: {reason}）。プロンプトや画像を変えて試してください。",
   errBusy: "前の生成がまだ実行中です。",
   errGeneric: "生成に失敗しました: {error}",
@@ -71,9 +71,9 @@ const JA = {
   saveFailed: "保存に失敗しました: {error}",
 
   privacyTitle: "個人情報の取り扱い",
-  privacy1: "画像は第三者（Google）のクラウドへ送信されます。院内規程・倫理審査・患者同意の範囲内でのみ使用してください。",
+  privacy1: "画像は、環境設定 ＞ 外部 AI で選んだ提供元の第三者クラウドへ送信されます。院内規程・倫理審査・患者同意の範囲内でのみ使用してください。",
   privacy2: "画素に焼き込まれた患者情報は取り除かれません。上のプレビューで必ず確認してください。",
-  privacy3: "無料枠では入力がモデル改善に利用され得ます。患者由来の画像は有料ティアで扱ってください。",
+  privacy3: "提供元や契約によっては、入力がモデルの改善に利用され得ます。患者由来の画像は、入力を学習に使わない契約で扱い、提供元の規約を確認してください。",
 } as const;
 
 const EN: Record<keyof typeof JA, string> = {
@@ -102,7 +102,7 @@ const EN: Record<keyof typeof JA, string> = {
   sourcePreview: "Image to be sent",
 
   generate: "Generate artwork",
-  generating: "Generating...",
+  generating: "Generating…",
   save: "Save as",
   close: "Close",
 
@@ -127,10 +127,10 @@ const EN: Record<keyof typeof JA, string> = {
   errNoTarget: "No target image. Open an image in the 2D viewer first.",
   errNoPixels: "Could not read the pixel data.",
   errNoPainter: "Select one painter.",
-  errNoKey: "The Gemini API key is not set. Configure it in Settings > External AI.",
+  errNoKey: "The API key for the external AI provider is not set. Set the key of the provider you use in Settings > External AI.",
   errPermission: "This plugin does not have permission to send data externally.",
   errDesktopOnly: "This feature is available in the desktop app only.",
-  errNoImage: "No image was returned.",
+  errNoImage: "No image was returned. Check that Settings > External AI has a model that supports image editing for \"Image to image\".",
   errBlocked: "Generation was refused (reason: {reason}). Try a different prompt or image.",
   errBusy: "A previous generation is still running.",
   errGeneric: "Generation failed: {error}",
@@ -140,9 +140,9 @@ const EN: Record<keyof typeof JA, string> = {
   saveFailed: "Failed to save: {error}",
 
   privacyTitle: "Handling of personal information",
-  privacy1: "The image is sent to a third-party (Google) cloud service. Use it only within your institution's policies, ethics approval and patient consent.",
+  privacy1: "The image is sent to the third-party cloud of the provider chosen in Settings > External AI. Use it only within your institution's policies, ethics approval and patient consent.",
   privacy2: "Patient information burned into the pixels is not removed. Always check the preview above.",
-  privacy3: "On the free tier your input may be used to improve the model. Use a paid tier for patient-derived images.",
+  privacy3: "Depending on the provider and plan, your input may be used to improve its models. For patient-derived images, use a plan that does not train on your input and check the provider's terms.",
 };
 
 export type MessageKey = keyof typeof JA;

@@ -107,10 +107,10 @@ var JA = {
   errNoTarget: "\u5BFE\u8C61\u306E\u753B\u50CF\u304C\u3042\u308A\u307E\u305B\u3093\u30022D \u30D3\u30E5\u30FC\u30A2\u3067\u753B\u50CF\u3092\u958B\u3044\u3066\u304B\u3089\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
   errNoPixels: "\u753B\u7D20\u3092\u8AAD\u307F\u51FA\u305B\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
   errNoPainter: "\u753B\u5BB6\u3092 1 \u540D\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002",
-  errNoKey: "Gemini \u306E API \u30AD\u30FC\u304C\u672A\u8A2D\u5B9A\u3067\u3059\u3002\u74B0\u5883\u8A2D\u5B9A \uFF1E \u5916\u90E8 AI \u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  errNoKey: "\u5916\u90E8 AI \u306E API \u30AD\u30FC\u304C\u672A\u8A2D\u5B9A\u3067\u3059\u3002\u74B0\u5883\u8A2D\u5B9A \uFF1E \u5916\u90E8 AI \u3067\u3001\u4F7F\u3046\u63D0\u4F9B\u5143\u306E\u30AD\u30FC\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
   errPermission: "\u3053\u306E\u30D7\u30E9\u30B0\u30A4\u30F3\u306B\u306F\u5916\u90E8\u9001\u4FE1\u306E\u6A29\u9650\u304C\u3042\u308A\u307E\u305B\u3093\u3002",
   errDesktopOnly: "\u3053\u306E\u6A5F\u80FD\u306F\u30C7\u30B9\u30AF\u30C8\u30C3\u30D7\u7248\u3067\u306E\u307F\u5229\u7528\u3067\u304D\u307E\u3059\u3002",
-  errNoImage: "\u753B\u50CF\u304C\u8FD4\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
+  errNoImage: "\u753B\u50CF\u304C\u8FD4\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u74B0\u5883\u8A2D\u5B9A \uFF1E \u5916\u90E8 AI \u306E\u300C\u753B\u50CF\u2192\u753B\u50CF\u300D\u306B\u3001\u753B\u50CF\u7DE8\u96C6\u306B\u5BFE\u5FDC\u3057\u305F\u30E2\u30C7\u30EB\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u308B\u304B\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
   errBlocked: "\u751F\u6210\u304C\u62D2\u5426\u3055\u308C\u307E\u3057\u305F\uFF08\u7406\u7531: {reason}\uFF09\u3002\u30D7\u30ED\u30F3\u30D7\u30C8\u3084\u753B\u50CF\u3092\u5909\u3048\u3066\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
   errBusy: "\u524D\u306E\u751F\u6210\u304C\u307E\u3060\u5B9F\u884C\u4E2D\u3067\u3059\u3002",
   errGeneric: "\u751F\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F: {error}",
@@ -119,9 +119,9 @@ var JA = {
   saved: "\u4FDD\u5B58\u3057\u307E\u3057\u305F: {path}",
   saveFailed: "\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F: {error}",
   privacyTitle: "\u500B\u4EBA\u60C5\u5831\u306E\u53D6\u308A\u6271\u3044",
-  privacy1: "\u753B\u50CF\u306F\u7B2C\u4E09\u8005\uFF08Google\uFF09\u306E\u30AF\u30E9\u30A6\u30C9\u3078\u9001\u4FE1\u3055\u308C\u307E\u3059\u3002\u9662\u5185\u898F\u7A0B\u30FB\u502B\u7406\u5BE9\u67FB\u30FB\u60A3\u8005\u540C\u610F\u306E\u7BC4\u56F2\u5185\u3067\u306E\u307F\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  privacy1: "\u753B\u50CF\u306F\u3001\u74B0\u5883\u8A2D\u5B9A \uFF1E \u5916\u90E8 AI \u3067\u9078\u3093\u3060\u63D0\u4F9B\u5143\u306E\u7B2C\u4E09\u8005\u30AF\u30E9\u30A6\u30C9\u3078\u9001\u4FE1\u3055\u308C\u307E\u3059\u3002\u9662\u5185\u898F\u7A0B\u30FB\u502B\u7406\u5BE9\u67FB\u30FB\u60A3\u8005\u540C\u610F\u306E\u7BC4\u56F2\u5185\u3067\u306E\u307F\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
   privacy2: "\u753B\u7D20\u306B\u713C\u304D\u8FBC\u307E\u308C\u305F\u60A3\u8005\u60C5\u5831\u306F\u53D6\u308A\u9664\u304B\u308C\u307E\u305B\u3093\u3002\u4E0A\u306E\u30D7\u30EC\u30D3\u30E5\u30FC\u3067\u5FC5\u305A\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
-  privacy3: "\u7121\u6599\u67A0\u3067\u306F\u5165\u529B\u304C\u30E2\u30C7\u30EB\u6539\u5584\u306B\u5229\u7528\u3055\u308C\u5F97\u307E\u3059\u3002\u60A3\u8005\u7531\u6765\u306E\u753B\u50CF\u306F\u6709\u6599\u30C6\u30A3\u30A2\u3067\u6271\u3063\u3066\u304F\u3060\u3055\u3044\u3002"
+  privacy3: "\u63D0\u4F9B\u5143\u3084\u5951\u7D04\u306B\u3088\u3063\u3066\u306F\u3001\u5165\u529B\u304C\u30E2\u30C7\u30EB\u306E\u6539\u5584\u306B\u5229\u7528\u3055\u308C\u5F97\u307E\u3059\u3002\u60A3\u8005\u7531\u6765\u306E\u753B\u50CF\u306F\u3001\u5165\u529B\u3092\u5B66\u7FD2\u306B\u4F7F\u308F\u306A\u3044\u5951\u7D04\u3067\u6271\u3044\u3001\u63D0\u4F9B\u5143\u306E\u898F\u7D04\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
 };
 var EN = {
   title: "Art of Imaging",
@@ -145,7 +145,7 @@ var EN = {
   bodyPartNote: "The body part cannot be read from DICOM here, so pick one from the list if you want it included.",
   sourcePreview: "Image to be sent",
   generate: "Generate artwork",
-  generating: "Generating...",
+  generating: "Generating\u2026",
   save: "Save as",
   close: "Close",
   generatingNote: "Writing the note\u2026",
@@ -168,10 +168,10 @@ var EN = {
   errNoTarget: "No target image. Open an image in the 2D viewer first.",
   errNoPixels: "Could not read the pixel data.",
   errNoPainter: "Select one painter.",
-  errNoKey: "The Gemini API key is not set. Configure it in Settings > External AI.",
+  errNoKey: "The API key for the external AI provider is not set. Set the key of the provider you use in Settings > External AI.",
   errPermission: "This plugin does not have permission to send data externally.",
   errDesktopOnly: "This feature is available in the desktop app only.",
-  errNoImage: "No image was returned.",
+  errNoImage: 'No image was returned. Check that Settings > External AI has a model that supports image editing for "Image to image".',
   errBlocked: "Generation was refused (reason: {reason}). Try a different prompt or image.",
   errBusy: "A previous generation is still running.",
   errGeneric: "Generation failed: {error}",
@@ -180,9 +180,9 @@ var EN = {
   saved: "Saved: {path}",
   saveFailed: "Failed to save: {error}",
   privacyTitle: "Handling of personal information",
-  privacy1: "The image is sent to a third-party (Google) cloud service. Use it only within your institution's policies, ethics approval and patient consent.",
+  privacy1: "The image is sent to the third-party cloud of the provider chosen in Settings > External AI. Use it only within your institution's policies, ethics approval and patient consent.",
   privacy2: "Patient information burned into the pixels is not removed. Always check the preview above.",
-  privacy3: "On the free tier your input may be used to improve the model. Use a paid tier for patient-derived images."
+  privacy3: "Depending on the provider and plan, your input may be used to improve its models. For patient-derived images, use a plan that does not train on your input and check the provider's terms."
 };
 function makeT(locale) {
   const dict = locale === "en" ? EN : JA;
